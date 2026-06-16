@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net (default deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() {
+      return request.resource.data;
+    }
+    function existing() {
+      return resource.data;
+    }
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return isSignedIn();
+    }
+
+    // Validation Blueprints
+    function isValidMatch(matchDoc) {
+      return matchDoc.id is string
+        && matchDoc.homeTeam is map
+        && matchDoc.awayTeam is map
+        && matchDoc.status is string;
+    }
+
+    function isValidSettings(settingsDoc) {
+      return settingsDoc.activeMatchId is string
+        && settingsDoc.streamUrl is string;
+    }
+
+    function isValidChatMessage(chatDoc) {
+      return chatDoc.name is string
+        && chatDoc.name.size() <= 64
+        && chatDoc.msg is string
+        && chatDoc.msg.size() <= 600000
+        && chatDoc.flag is string
+        && chatDoc.uid == request.auth.uid
+        && (chatDoc.get('audioData', null) == null || chatDoc.audioData is string);
+    }
+
+    // Allow rules for Matches
+    match /matches/{matchId} {
+      allow read: if true; // Publicly readable for dynamic scoreboard
+      allow create, update: if isAdmin() && isValidId(matchId) && isValidMatch(incoming());
+      allow delete: if isAdmin() && isValidId(matchId);
+    }
+
+    // Allow rules for Stream Settings (URL of current live and DRM configurations)
+    match /settings/{configId} {
+      allow read: if true; // Readable by stream clients
+      allow create, update: if isAdmin() && isValidId(configId) && isValidSettings(incoming());
+      allow delete: if isAdmin() && isValidId(configId);
+    }
+
+    // Allow rules for Admin user records
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin() && isValidId(adminId);
+      allow delete: if isAdmin() && isValidId(adminId);
+    }
+
+    // Allow rules for Live Chat Messages
+    match /chatMessages/{messageId} {
+      allow read: if true; // Readable by everyone to view messages
+      allow create: if isSignedIn() && isValidId(messageId) && isValidChatMessage(incoming());
+      allow update, delete: if isAdmin() || (isSignedIn() && existing().uid == request.auth.uid);
+    }
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "entities": {
+    "Team": {
+      "title": "Team",
+      "description": "Information about a soccer team",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "flag": { "type": "string" },
+        "color": { "type": "string" },
+        "secondaryColor": { "type": "string" }
+      },
+      "required": ["name", "code", "flag", "color", "secondaryColor"]
+    },
+    "GoalEvent": {
+      "title": "GoalEvent",
+      "description": "Details about a goal in a match",
+      "type": "object",
+      "properties": {
+        "minute": { "type": "integer" },
+        "player": { "type": "string" },
+        "teamCode": { "type": "string" },
+        "penalty": { "type": "boolean" },
+        "ownGoal": { "type": "boolean" }
+      },
+      "required": ["minute", "player", "teamCode"]
+    },
+    "TimelineEvent": {
+      "title": "TimelineEvent",
+      "description": "A match event occurred dynamically",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "minute": { "type": "integer" },
+        "type": { "type": "string" },
+        "teamCode": { "type": "string" },
+        "player": { "type": "string" },
+        "detail": { "type": "string" }
+      },
+      "required": ["id", "minute", "type", "teamCode", "player", "detail"]
+    },
+    "CommentaryTrack": {
+      "title": "CommentaryTrack",
+      "description": "Audio feed detail",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "flag": { "type": "string" },
+        "channel": { "type": "string" },
+        "commentator": { "type": "string" }
+      },
+      "required": ["code", "name", "flag", "channel", "commentator"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "Live, scheduled or finished dynamic soccer match",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "homeTeam": { "$ref": "#/definitions/Team" },
+        "awayTeam": { "$ref": "#/definitions/Team" },
+        "homeScore": { "type": "integer" },
+        "awayScore": { "type": "integer" },
+        "status": { "type": "string" },
+        "minute": { "type": "integer" },
+        "group": { "type": "string" },
+        "stadium": { "type": "string" },
+        "spectators": { "type": "string" },
+        "referee": { "type": "string" },
+        "goals": { "type": "array" },
+        "stats": { "type": "object" },
+        "lineups": { "type": "object" },
+        "timeline": { "type": "array" },
+        "heroImage": { "type": "string" }
+      },
+      "required": ["id", "homeTeam", "awayTeam", "homeScore", "awayScore", "status", "minute", "group"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Admin configuration settings (DRM live url, language etc)",
+      "type": "object",
+      "properties": {
+        "activeMatchId": { "type": "string" },
+        "streamUrl": { "type": "string" },
+        "drmKey": { "type": "string" },
+        "resolution": { "type": "string" },
+        "resolutions": { "type": "array" },
+        "activeCommentaryCode": { "type": "string" },
+        "languages": { "type": "array" }
+      },
+      "required": ["activeMatchId", "streamUrl", "drmKey"]
+    },
+    "AdminInfo": {
+      "title": "AdminInfo",
+      "description": "Admin privileges check list",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" }
+      },
+      "required": ["email"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A live-synced fan chat message or voice snippet",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "msg": { "type": "string" },
+        "flag": { "type": "string" },
+        "uid": { "type": "string" },
+        "audioData": { "type": "string" },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["name", "msg", "flag", "uid"]
+    }
+  },
+  "firestore": {
+    "matches/{matchId}": {
+      "schema": "Match",
+      "description": "Soccer matches listing synced across web clients"
+    },
+    "settings/config": {
+      "schema": "Settings",
+      "description": "Global active live stream configurations and credentials"
+    },
+    "admins/{adminId}": {
+      "schema": "AdminDetail",
+      "description": "Stores user IDs that are allowed to make admin panel edits"
+    },
+    "chatMessages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Global chat messages stream database"
+    }
+  }
+}

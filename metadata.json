@@ -1,0 +1,6 @@
+{
+  "name": "FIFA 2026 Match Live Streaming",
+  "description": "An immersive soccer live streaming application for the FIFA World Cup 2026, featuring an iOS-inspired glassmorphic design, instant real-time statistics, multi-angle view simulation, and dynamic match alerts.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
