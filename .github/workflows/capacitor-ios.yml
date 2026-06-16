@@ -22,11 +22,14 @@ jobs:
       - name: Build web app
         run: npm run build
 
-      - name: Install Capacitor CLI globally
+      - name: Install Capacitor CLI
         run: npm install -g @capacitor/cli
 
-      - name: Sync Capacitor iOS
-        run: npx cap sync ios
+      - name: Generate iOS project
+        run: |
+          mkdir -p ios
+          npx cap add ios
+          npx cap sync ios
 
       - name: Install CocoaPods
         run: |
