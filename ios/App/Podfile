@@ -1,13 +1,13 @@
-platform :ios, '13.0' 
- 
-workspace 'App.xcworkspace' 
- 
-target 'App' do 
-  project 'App.xcodeproj' 
-  pod 'Capacitor', :path =
-  pod 'CapacitorCordova', :path =
- 
-  target 'AppTests' do 
-    inherit! :search_paths 
-  end 
-end 
+platform :ios, '13.0'
+
+workspace 'App.xcworkspace'
+
+target 'App' do
+  project 'App.xcodeproj'
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+  
+  target 'AppTests' do
+    inherit! :search_paths
+  end
+end
