@@ -1,0 +1,46 @@
+name: iOS IPA Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build web app
+        run: npm run build
+        
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+        
+      - name: Install CocoaPods
+        run: |
+          cd ios/App
+          pod install
+          
+      - name: Build iOS app
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -derivedDataPath ./build -allowProvisioningUpdates CODE_SIGNING_ALLOWED=NO clean build
+          
+      - name: Create IPA
+        run: |
+          mkdir -p Payload
+          cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qq -r -9 CapacitorApp.ipa Payload
+          
+      - name: Upload IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: CapacitorIPA
+          path: CapacitorApp.ipa
