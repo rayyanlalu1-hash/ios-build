@@ -1,3 +1,4 @@
+
 name: iOS IPA Build
 
 on:
@@ -6,42 +7,49 @@ on:
 jobs:
   build-ios:
     runs-on: macos-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
-          
-      - name: Clean install dependencies
+
+      # This is the critical fix: force a clean install on the macOS runner
+      - name: 🔄 Force clean install for macOS
         run: |
           rm -rf node_modules package-lock.json
           npm install
-          
-      - name: Build web app
+
+      - name: 🔨 Build web app
         run: npm run build
-        
-      - name: Sync Capacitor iOS
+
+      - name: 📱 Sync Capacitor iOS
         run: npx cap sync ios
-        
-      - name: Install CocoaPods
+
+      - name: 🍏 Install CocoaPods
         run: |
           cd ios/App
           pod install
-          
-      - name: Build iOS app
+
+      - name: 🏗️ Build iOS app (unsigned)
         run: |
           cd ios/App
-          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -derivedDataPath ./build -allowProvisioningUpdates CODE_SIGNING_ALLOWED=NO clean build
-          
-      - name: Create IPA
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -derivedDataPath ./build \
+            -allowProvisioningUpdates \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+
+      - name: 📦 Create IPA
         run: |
           mkdir -p Payload
           cp -r ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
           zip -qq -r -9 CapacitorApp.ipa Payload
-          
-      - name: Upload IPA
+
+      - name: ⬆️ Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: CapacitorIPA
