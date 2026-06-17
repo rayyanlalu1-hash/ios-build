@@ -1,12 +1,9 @@
 name: iOS IPA Build
-
 on:
   workflow_dispatch:
-
 jobs:
   build-ios:
     runs-on: macos-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -25,27 +22,40 @@ jobs:
       - name: Install Capacitor CLI
         run: npm install -g @capacitor/cli
 
-      - name: Generate iOS project
+      - name: Generate iOS project (no sync yet)
         run: |
           rm -rf ios
           npx cap add ios
-          npx cap sync ios
 
-      - name: Fix deployment target in project.pbxproj
+      - name: Fix deployment target BEFORE pod install
         run: |
           cd ios/App
-          # Direct replacement in the Xcode project file
-          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 14.0;/g' App.xcodeproj/project.pbxproj
-          # Also update the Podfile
-          sed -i '' 's/platform :ios, .*/platform :ios, "14.0"/' Podfile
-          # Verify changes
-          echo "=== Checking deployment target ==="
-          grep -n "IPHONEOS_DEPLOYMENT_TARGET" App.xcodeproj/project.pbxproj | head -5
+          # Bump project-level + target-level deployment target
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' App.xcodeproj/project.pbxproj
+          # Podfile is generated fresh by `cap add`, so it should exist now
+          if [ -f Podfile ]; then
+            sed -i '' "s/platform :ios, .*/platform :ios, '15.0'/" Podfile
+          fi
+          echo "=== project.pbxproj targets ==="
+          grep -n "IPHONEOS_DEPLOYMENT_TARGET" App.xcodeproj/project.pbxproj
+          echo "=== Podfile platform line ==="
+          grep -n "platform :ios" Podfile || true
+
+      - name: Sync web assets + plugins (no pod install side effects since pods not installed yet)
+        run: npx cap copy ios && npx cap update ios
 
       - name: Install CocoaPods
         run: |
           cd ios/App
+          pod repo update
           pod install --verbose
+
+      - name: Re-verify deployment target after pod install
+        run: |
+          cd ios/App
+          # CocoaPods regenerates Pods.xcodeproj; make sure pods also match
+          find Pods -name "*.xcconfig" -exec sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 15.0/g' {} \; 2>/dev/null || true
+          grep -rn "IPHONEOS_DEPLOYMENT_TARGET" App.xcodeproj/project.pbxproj
 
       - name: Build iOS app
         run: |
