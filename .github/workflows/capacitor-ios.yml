@@ -22,29 +22,35 @@ jobs:
       - name: Install Capacitor CLI
         run: npm install -g @capacitor/cli
 
-      - name: Generate iOS project (no sync yet)
+      - name: Generate iOS project (let pod install fail here, we patch after)
         run: |
           rm -rf ios
-          npx cap add ios
+          # `cap add ios` internally runs `pod install` as its final step and
+          # there is no flag to skip this. With the default deployment target
+          # it writes (13.0), pod install fails and the command exits non-zero
+          # -- but by that point ios/App/Podfile and the .xcodeproj already
+          # exist on disk. We let it fail here (|| true) and fix + install
+          # pods ourselves in the next steps.
+          npx cap add ios || true
+          # sanity check: the project must actually have been scaffolded,
+          # otherwise something else is wrong and we should stop the build.
+          test -f ios/App/Podfile
+          test -f ios/App/App.xcodeproj/project.pbxproj
 
       - name: Fix deployment target BEFORE pod install
         run: |
           cd ios/App
-          # Bump project-level + target-level deployment target
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 15.0;/g' App.xcodeproj/project.pbxproj
-          # Podfile is generated fresh by `cap add`, so it should exist now
-          if [ -f Podfile ]; then
-            sed -i '' "s/platform :ios, .*/platform :ios, '15.0'/" Podfile
-          fi
+          sed -i '' "s/platform :ios, .*/platform :ios, '15.0'/" Podfile
           echo "=== project.pbxproj targets ==="
           grep -n "IPHONEOS_DEPLOYMENT_TARGET" App.xcodeproj/project.pbxproj
           echo "=== Podfile platform line ==="
-          grep -n "platform :ios" Podfile || true
+          grep -n "platform :ios" Podfile
 
-      - name: Sync web assets + plugins (no pod install side effects since pods not installed yet)
-        run: npx cap copy ios && npx cap update ios
+      - name: Copy web assets into native project (no pod install triggered)
+        run: npx cap copy ios
 
-      - name: Install CocoaPods
+      - name: Install CocoaPods manually
         run: |
           cd ios/App
           pod repo update
