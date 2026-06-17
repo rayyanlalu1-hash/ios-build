@@ -31,15 +31,29 @@ jobs:
           npx cap add ios
           npx cap sync ios
 
-      - name: Update iOS deployment target
+      - name: Create correct Podfile
         run: |
           cd ios/App
-          # Update the deployment target in the Podfile
-          sed -i '' 's/platform :ios, .*/platform :ios, "14.0"/' Podfile
-          # Update the project deployment target
-          /usr/libexec/PlistBuddy -c "Set :IPHONEOS_DEPLOYMENT_TARGET 14.0" App.xcodeproj/project.pbxproj || true
-          # Alternative: use a more direct approach
-          ruby -i -pe 'gsub(/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+;/, "IPHONEOS_DEPLOYMENT_TARGET = 14.0;")' App.xcodeproj/project.pbxproj
+          cat > Podfile << 'EOF'
+          platform :ios, '14.0'
+
+          workspace 'App.xcworkspace'
+
+          target 'App' do
+            project 'App.xcodeproj'
+            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+
+            target 'AppTests' do
+              inherit! :search_paths
+            end
+          end
+          EOF
+
+      - name: Fix Xcode project
+        run: |
+          cd ios/App
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 14.0;/g' App.xcodeproj/project.pbxproj
 
       - name: Install CocoaPods
         run: |
