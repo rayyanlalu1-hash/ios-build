@@ -31,34 +31,21 @@ jobs:
           npx cap add ios
           npx cap sync ios
 
-      - name: Create correct Podfile
+      - name: Fix deployment target in project.pbxproj
         run: |
           cd ios/App
-          cat > Podfile << 'EOF'
-          platform :ios, '14.0'
-
-          workspace 'App.xcworkspace'
-
-          target 'App' do
-            project 'App.xcodeproj'
-            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-
-            target 'AppTests' do
-              inherit! :search_paths
-            end
-          end
-          EOF
-
-      - name: Fix Xcode project
-        run: |
-          cd ios/App
+          # Direct replacement in the Xcode project file
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 14.0;/g' App.xcodeproj/project.pbxproj
+          # Also update the Podfile
+          sed -i '' 's/platform :ios, .*/platform :ios, "14.0"/' Podfile
+          # Verify changes
+          echo "=== Checking deployment target ==="
+          grep -n "IPHONEOS_DEPLOYMENT_TARGET" App.xcodeproj/project.pbxproj | head -5
 
       - name: Install CocoaPods
         run: |
           cd ios/App
-          pod install
+          pod install --verbose
 
       - name: Build iOS app
         run: |
