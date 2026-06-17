@@ -25,9 +25,9 @@ jobs:
       - name: Install Capacitor CLI
         run: npm install -g @capacitor/cli
 
-      - name: Generate iOS project
+      - name: Remove incomplete iOS folder and generate new one
         run: |
-          mkdir -p ios
+          rm -rf ios
           npx cap add ios
           npx cap sync ios
 
