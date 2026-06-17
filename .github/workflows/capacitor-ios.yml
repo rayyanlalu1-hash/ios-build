@@ -25,11 +25,21 @@ jobs:
       - name: Install Capacitor CLI
         run: npm install -g @capacitor/cli
 
-      - name: Remove incomplete iOS folder and generate new one
+      - name: Generate iOS project
         run: |
           rm -rf ios
           npx cap add ios
           npx cap sync ios
+
+      - name: Update iOS deployment target
+        run: |
+          cd ios/App
+          # Update the deployment target in the Podfile
+          sed -i '' 's/platform :ios, .*/platform :ios, "14.0"/' Podfile
+          # Update the project deployment target
+          /usr/libexec/PlistBuddy -c "Set :IPHONEOS_DEPLOYMENT_TARGET 14.0" App.xcodeproj/project.pbxproj || true
+          # Alternative: use a more direct approach
+          ruby -i -pe 'gsub(/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+;/, "IPHONEOS_DEPLOYMENT_TARGET = 14.0;")' App.xcodeproj/project.pbxproj
 
       - name: Install CocoaPods
         run: |
